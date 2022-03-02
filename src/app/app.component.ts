@@ -12,11 +12,11 @@ export class AppComponent implements OnInit {
   @ViewChild('canvas', { static: true })
   canvas!: ElementRef<HTMLCanvasElement>;
   screen={
-    width:600,
-    height:600
+    width:10000,
+    height:10000
   };
-  figureSize=8;
-  figureSpace=10;
+  figureSize=18;
+  figureSpace=20;
   figureMargin:number=0;
   actualPosition={ x:0, y:0};
   primeNumbers:Array<number>=[];
@@ -33,32 +33,32 @@ export class AppComponent implements OnInit {
   async animate(): Promise<void> {
     this.ctx.fillStyle = 'red';
     const square = new Square(this.ctx);
-    this.findCenter();
     let maxCounter:number = Math.min(this.screen.height, this.screen.width)/this.figureSpace;
     let maxCubes: number= Math.floor(this.screen.height/this.figureSpace)*Math.floor(this.screen.width/this.figureSpace);
+    this.findCenter(maxCubes);
     let complete:boolean=false;
     this.primeNumbersCalculator(maxCubes).then((_)=>{
-      console.log("Devolviendo la promesa")
-      complete=true});
+      complete=true;
+    });
+    console.log({maxCounter: maxCounter, maxCubes: maxCubes});
     let actualCubes: number =1;
     for (let counter = 1; counter <= maxCounter; counter++) {
       for (let d = 0; d < 2; d++) {
         let localDirection=this.cycleDirection();
         for (let mov = 0; mov < counter; mov++) {
-        await this.delay(1);
-        this.changeDirection(localDirection);
-        if (maxCubes<=actualCubes) {
+        if (maxCubes<actualCubes) {
           console.log("Completado");
           return;
         }else{
-          if (actualCubes>this.primeNumbers[this.primeNumbers.length-1] && !complete) {
+          while(actualCubes>this.primeNumbers[this.primeNumbers.length-1] && !complete) {
             console.log("Entrando Delay");
-            await this.delay(200);
+            await this.delay(10);
             console.log("Saliendo Delay");
           }
           if(this.primeNumbers.includes(actualCubes)){
-            square.draw(this.actualPosition.x+this.figureMargin, this.actualPosition.y+this.figureMargin, this.figureSize);
+            this.drawCube(square, actualCubes);
           }
+          this.changeDirection(localDirection);
           actualCubes++;
         }
       }
@@ -68,10 +68,18 @@ export class AppComponent implements OnInit {
 
   }
 
+  private drawCube(square: Square, actualCubes: number) {
+    this.ctx.fillStyle = "red";
+    square.draw(this.actualPosition.x + this.figureMargin, this.actualPosition.y + this.figureMargin, this.figureSize);
+    this.ctx.font = "3 px Arial";
+    this.ctx.fillStyle = "black";
+    this.ctx.textAlign = "center";
+    this.ctx.fillText(actualCubes.toString(), this.actualPosition.x + this.figureSpace / 2, this.actualPosition.y + this.figureSize, this.figureSpace);
+  }
+
   async primeNumbersCalculator(toNumber:number):Promise<void>{
     for (let index = 2; index <= toNumber; index++) {
       if(!this.primeNumbers.some((element)=>index%element===0)){
-        console.log(index);
         this.primeNumbers.push(index);
       }
     }
@@ -80,23 +88,29 @@ export class AppComponent implements OnInit {
   private changeDirection(localDirection: Direction) {
     switch (localDirection) {
       case Direction.Right:
-        this.actualPosition.x = this.actualPosition.x + 10;
+        this.actualPosition.x = this.actualPosition.x + this.figureSpace;
         break;
       case Direction.Down:
-        this.actualPosition.y = this.actualPosition.y + 10;
+        this.actualPosition.y = this.actualPosition.y + this.figureSpace;
         break;
       case Direction.Left:
-        this.actualPosition.x = this.actualPosition.x - 10;
+        this.actualPosition.x = this.actualPosition.x - this.figureSpace;
         break;
       case Direction.Up:
-        this.actualPosition.y = this.actualPosition.y - 10;
+        this.actualPosition.y = this.actualPosition.y - this.figureSpace;
         break;
     }
   }
 
-  findCenter():void{
-    this.actualPosition.x=this.screen.width/2;
-    this.actualPosition.y=this.screen.height/2-this.figureSpace;
+  findCenter(maxCubes:number):void{
+    if (maxCubes%2===0) {
+      this.actualPosition.x=this.screen.width/2;
+      this.actualPosition.y=this.screen.height/2-this.figureSpace;
+    }else{
+      this.actualPosition.x=this.screen.width/2-this.figureSpace/2;
+      this.actualPosition.y=this.screen.height/2-this.figureSpace/2;
+    }
+
   }
   
    cycleDirection():Direction{
